@@ -1,0 +1,156 @@
+int colorArray[6][3] = { //Basic color array
+    {255,0,0},//Red 0
+    {255,255,25},//Yellow 1
+    {0,255,0},//Green 2
+    {25,255,255},//Cyan 3
+    {0,0,255},//Blue 4    
+    {255,25,255}//Magenta 5
+  };
+
+int targetColor = -1;
+String currentMode = "Fade";
+int currentColor = 1;
+unsigned long currentTime = millis();
+int currentRValue = 5;
+
+int currentGValue = 5;
+int currentBValue = 5;
+int tempRValue;
+int tempGValue;
+int tempBValue;
+int enteredLetter;
+int lifeSpan1 = 1000+100*random(0,10);
+int lifeSpan2 = 1000+100*random(0,10);
+int lifeSpan3 = 1000+100*random(0,10);
+unsigned long deathTime1;
+unsigned long deathTime2;
+unsigned long deathTime3;
+
+int colorStayTime = 1000; //Time in ms to allow controlling lights without delay
+int colorFadeTime = 3000;
+int fadeDelay = (colorFadeTime - colorStayTime) / 255;
+
+void setup() {
+  Serial.begin(9600);
+  #define rgbRPin 3 //Define rbg pins. R3 G4 B5
+  #define rgbGPin 4
+  #define rgbBPin 5
+
+  #define rPin1 11 //Define outside red pins
+  #define rPin2 12
+  #define rPin3 13
+  pinMode(11, OUTPUT); //Set outside red pins to on
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
+  digitalWrite(11, HIGH);
+  digitalWrite(12, LOW);
+  digitalWrite(13, HIGH);
+}
+
+
+void loop()
+{
+  Serial.print("R:"); //Debug output to Serial Monitor
+  Serial.print(currentRValue);
+  Serial.print(" ");
+  Serial.print("G:");
+  Serial.print(currentGValue);
+  Serial.print(" ");
+  Serial.print("B:");
+  Serial.print(currentBValue);
+  Serial.println("");
+  if (currentMode == "Fade") {
+    if (millis() - currentTime >= fadeDelay) { //If time since last update is past fadeDelay
+      tempRValue = currentRValue; //Assign current values to different variable
+      tempGValue = currentGValue;
+      tempBValue = currentBValue;
+      currentRValue = changeColor(currentRValue,0,currentColor); //Update values with changecolor function
+      currentGValue = changeColor(currentGValue,1,currentColor);
+      currentBValue = changeColor(currentBValue,2,currentColor);
+      analogWrite(rgbRPin,currentRValue);
+      analogWrite(rgbGPin,currentGValue);
+      analogWrite(rgbBPin,currentBValue); //Write new values then update currentTme
+      currentTime = millis();
+      if (tempRValue == currentRValue && tempGValue == currentGValue && tempBValue == currentBValue) { //If no changes happened go to Stay mode
+        currentMode = "Stay";
+      }
+    }
+  } else if (currentMode == "Stay") {
+    if (millis() - currentTime >= colorStayTime) { //If we've been in Stay mode for more than a second go to Fade mode
+      if (currentColor < 5) {
+        currentColor++;
+      } else {
+        currentColor = 0;
+      }
+      currentMode = "Fade";
+    }
+  }
+
+
+  //Flashing red LED
+  if (millis() - deathTime1 >= lifeSpan1) {// Read time left for LED and if past change output
+    if (digitalRead(rPin1) == HIGH) {
+      digitalWrite(rPin1, LOW);
+    } else {
+      digitalWrite(rPin1, HIGH);
+    }
+    lifeSpan1 = 1000+100*random(0,10);
+    deathTime1 = millis();
+  }
+
+  if (millis() - deathTime2 >= lifeSpan2) {// Read time left for LED and if past change output
+    if (digitalRead(rPin2) == HIGH) {
+      digitalWrite(rPin2, LOW);
+    } else {
+      digitalWrite(rPin2, HIGH);
+    }
+    lifeSpan2 = 1000+100*random(0,10);
+    deathTime2 = millis();
+  }
+
+  if (millis() - deathTime3 >= lifeSpan3) {// Read time left for LED and if past change output
+    if (digitalRead(rPin3) == HIGH) {
+      digitalWrite(rPin3, LOW);
+    } else {
+      digitalWrite(rPin3, HIGH);
+    }
+    lifeSpan3 = 1000+100*random(0,10);
+    deathTime3 = millis();
+  }
+
+
+  //Serial Monitor
+  if (Serial.available() > 0) {
+    enteredLetter = Serial.read(); //Read input from serial monitor and update LED color to match.
+    if(enteredLetter == 82 or enteredLetter == 114) {
+      currentColor = 0;
+      currentMode = "Fade";
+    } else if(enteredLetter == 89 or enteredLetter == 121) {
+      currentColor = 1;
+      currentMode = "Fade";
+    } else if(enteredLetter == 103 or enteredLetter == 71) {
+      currentColor = 2;
+      currentMode = "Fade";
+    } else if(enteredLetter == 99 or enteredLetter == 67) {
+      currentColor = 3;
+      currentMode = "Fade";
+    } else if(enteredLetter == 98 or enteredLetter == 66) {
+      currentColor = 4;
+      currentMode = "Fade";
+    } else if(enteredLetter == 109 or enteredLetter == 77) {
+      currentColor = 5;
+      currentMode = "Fade";
+    }
+  }
+}
+
+int changeColor(int workingVal, int n, int destinationColor) { //Function to update color
+  if (workingVal != colorArray[destinationColor][n]) {
+    if (colorArray[destinationColor][n] > workingVal) {
+      workingVal++; //Increase by 1
+    } else {
+      workingVal--; //Decrease by 1
+    }
+  }
+  return workingVal;
+}
